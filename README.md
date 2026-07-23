@@ -22,6 +22,17 @@ Ghosttyle is an unofficial, bilingual visual configuration studio for [Ghostty](
 
 ## Quick start
 
+### Portable ZIP (no Node.js installation required)
+
+Download the ZIP matching your Mac from [GitHub Releases](https://github.com/JoeyOnMars/ghosttyle/releases/latest), extract it, and double-click `Ghosttyle.command`:
+
+- `macos-arm64` for Apple Silicon Macs.
+- `macos-x64` for Intel Macs.
+
+The portable ZIP includes its own Node.js runtime. It does not install or replace Node.js on your Mac.
+
+### Source checkout
+
 On macOS, double-click:
 
 ```text
@@ -54,6 +65,12 @@ Some Ghostty options, including `background-opacity`, still require a full Ghost
 npm run check
 ```
 
+Build clean portable ZIP files with bundled official Node.js runtimes:
+
+```bash
+./scripts/build-portable-zips.sh
+```
+
 The check runs syntax validation, unit tests, i18n key parity tests, config-model tests, and a local API integration test.
 
 ---
@@ -81,6 +98,8 @@ Ghosttyle 是一个非官方、支持中英文的 Ghostty 本地可视化配置�
 ```bash
 npm start
 ```
+
+从 [GitHub Releases](https://github.com/JoeyOnMars/ghosttyle/releases/latest) 下载时，请选择与 Mac 匹配的便携 ZIP：Apple Silicon 使用 `macos-arm64`，Intel Mac 使用 `macos-x64`。便携 ZIP 已内置 Node.js，不会安装或替换本机 Node.js；解压后直接双击 `Ghosttyle.command` 即可。
 
 也可以点击网页右上角的“退出”按钮停止本地 npm/Node 进程。通过 Apple Terminal 双击 `Ghosttyle.command` 启动时，正常退出还会自动关闭这个启动器自己的标签页或窗口；如果启动或运行报错，窗口会保留以便排查。如需始终保留窗口，可在启动时设置 `GHOSTTYLE_KEEP_TERMINAL=1`。Ghosttyle 会尝试自动关闭浏览器标签页；如果浏览器阻止自动关闭，退出完成页会提示你手动关闭。
 

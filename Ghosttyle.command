@@ -8,8 +8,21 @@ cd "$ROOT_DIR"
 # can close only its own tab/window instead of touching any other Terminal tabs.
 terminal_tty="$(/usr/bin/tty 2>/dev/null || true)"
 
+bundled_node="$ROOT_DIR/runtime/node"
+if [[ -x "$bundled_node" ]]; then
+  node_bin="$bundled_node"
+else
+  node_bin="$(command -v node 2>/dev/null || true)"
+fi
+
+if [[ -z "$node_bin" ]]; then
+  echo "Ghosttyle: Node.js was not found."
+  echo "Ghosttyle: 此安装包没有内置 Node.js，本机也没有找到 Node.js。"
+  exit 127
+fi
+
 set +e
-node server.mjs --open
+"$node_bin" server.mjs --open
 status=$?
 set -e
 
