@@ -1,0 +1,16 @@
+{
+  "name": "ghosttyle",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A bilingual, dependency-free visual configuration studio for Ghostty.",
+  "scripts": {
+    "start": "node server.mjs --open",
+    "start:no-open": "node server.mjs",
+    "test": "node --test",
+    "check": "node --check server.mjs && node --check public/theme-init.js && node --check public/i18n.js && node --check public/app.js && node --check public/config-model.js && node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

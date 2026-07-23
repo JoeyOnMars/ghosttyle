@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Ghosttyle</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <script src="/theme-init.js"></script>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <span></span><span></span>
+          </div>
+          <div>
+            <p class="eyebrow">LOCAL CONFIGURATOR</p>
+            <h1>Ghosttyle</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div class="language-control" aria-label="语言">
+            <div class="mini-segmented">
+              <button type="button" data-ui-language="zh" title="中文">中文</button>
+              <button type="button" data-ui-language="en" title="English">EN</button>
+            </div>
+          </div>
+          <div class="ui-theme-control" aria-label="网页外观">
+            <span>界面</span>
+            <div class="mini-segmented">
+              <button type="button" data-ui-theme-mode="system" title="跟随系统">自动</button>
+              <button type="button" data-ui-theme-mode="light" title="浅色界面">浅色</button>
+              <button type="button" data-ui-theme-mode="dark" title="深色界面">深色</button>
+            </div>
+          </div>
+          <div class="topbar-status">
+            <span class="status-dot" id="ghostty-dot"></span>
+            <span id="ghostty-version">正在连接 Ghostty…</span>
+          </div>
+          <button class="shutdown-button" id="shutdown-button" type="button" aria-label="退出 Ghosttyle" title="退出 Ghosttyle 并停止本地服务" disabled>
+            <span class="shutdown-button-icon" aria-hidden="true">⏻</span>
+            <span id="shutdown-label">退出</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="sidebar">
+          <nav class="nav-list" aria-label="配置分区">
+            <button class="nav-item is-active" type="button" data-panel="themes">
+              <span class="nav-icon">◐</span>
+              <span>主题与预览</span>
+            </button>
+            <button class="nav-item" type="button" data-panel="common">
+              <span class="nav-icon">⌘</span>
+              <span>常用设置</span>
+            </button>
+            <button class="nav-item" type="button" data-panel="raw">
+              <span class="nav-icon">&lt;/&gt;</span>
+              <span>原始配置</span>
+            </button>
+          </nav>
+
+          <div class="sidebar-card">
+            <p class="sidebar-label">当前配置</p>
+            <p class="config-path" id="config-path">读取中…</p>
+            <div class="sidebar-meta">
+              <span id="theme-count">— 个主题</span>
+              <span id="font-count">— 个字体</span>
+            </div>
+          </div>
+
+          <div class="sidebar-note">
+            <span class="lock-icon">⌾</span>
+            <p>仅在本机运行。保存前校验，并为旧配置创建备份。</p>
+          </div>
+        </aside>
+
+        <main class="content">
+          <section class="notice is-hidden" id="notice" aria-live="polite">
+            <div class="notice-icon" id="notice-icon">!</div>
+            <div class="notice-copy">
+              <strong id="notice-title">配置需要处理</strong>
+              <p id="notice-message"></p>
+              <div class="repair-actions" id="repair-actions"></div>
+            </div>
+            <button class="icon-button" id="dismiss-notice" type="button" aria-label="关闭提示">×</button>
+          </section>
+
+          <section class="panel is-active" data-panel-content="themes">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">APPEARANCE</p>
+                <h2>主题与实时预览</h2>
+                <p>主题直接来自这台 Mac 上安装的 Ghostty，不再手敲名称。</p>
+              </div>
+              <div class="segmented" id="theme-mode" aria-label="主题模式">
+                <button type="button" data-theme-mode="system">跟随系统</button>
+                <button type="button" data-theme-mode="single">单一主题</button>
+              </div>
+            </div>
+
+            <div class="theme-hero">
+              <div class="theme-controls card">
+                <div id="system-theme-fields" class="field-stack">
+                  <div class="field theme-slot-field">
+                    <button class="theme-slot-heading" type="button" data-theme-slot-button="light">
+                      <span class="theme-slot-name">浅色主题</span>
+                      <small class="theme-slot-state">当前选择</small>
+                    </button>
+                    <select id="light-theme-select"></select>
+                  </div>
+                  <div class="field theme-slot-field">
+                    <button class="theme-slot-heading" type="button" data-theme-slot-button="dark">
+                      <span class="theme-slot-name">深色主题</span>
+                      <small class="theme-slot-state">当前选择</small>
+                    </button>
+                    <select id="dark-theme-select"></select>
+                  </div>
+                  <p class="theme-assignment-hint" id="system-theme-hint">当前选择目标：浅色主题。点击下方任意主题卡片即可替换。</p>
+                </div>
+                <div id="single-theme-fields" class="field-stack is-hidden">
+                  <label class="field">
+                    <span>当前主题</span>
+                    <select id="single-theme-select"></select>
+                  </label>
+                </div>
+
+              </div>
+
+              <div class="terminal-preview" id="terminal-preview">
+                <div class="terminal-titlebar">
+                  <div class="traffic-lights"><i></i><i></i><i></i></div>
+                  <span id="preview-name">Theme preview</span>
+                  <span class="titlebar-spacer"></span>
+                </div>
+                <div class="terminal-body">
+                  <p><span class="prompt">➜</span> <span class="path">~/projects/ghostty</span> <span class="branch">git:(main)</span></p>
+                  <p><span class="command">ghostty</span> <span class="flag">+validate-config</span></p>
+                  <p class="success">✓ Configuration is valid</p>
+                  <p><span class="muted">theme</span> = <span class="accent" id="preview-theme-label">Adwaita</span></p>
+                  <p><span class="prompt">➜</span> <span class="cursor"></span></p>
+                </div>
+                <div class="palette-strip" id="preview-palette"></div>
+              </div>
+            </div>
+
+            <div class="gallery-toolbar">
+              <label class="search-box">
+                <span>⌕</span>
+                <input id="theme-search" type="search" placeholder="搜索主题，例如 Catppuccin…" autocomplete="off">
+              </label>
+              <div class="filter-pills" id="theme-filter">
+                <button class="is-active" type="button" data-filter="all">全部</button>
+                <button type="button" data-filter="light">浅色</button>
+                <button type="button" data-filter="dark">深色</button>
+              </div>
+              <span class="gallery-result" id="gallery-result"></span>
+            </div>
+
+            <div class="theme-gallery" id="theme-gallery" aria-live="polite"></div>
+          </section>
+
+          <section class="panel" data-panel-content="common">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">ESSENTIALS</p>
+                <h2>常用设置</h2>
+                <p>留空表示继续使用 Ghostty 默认值；修改会同步到右侧原始配置。</p>
+              </div>
+            </div>
+
+            <div class="settings-grid">
+              <article class="settings-card">
+                <div class="settings-card-heading">
+                  <span class="settings-icon">Aa</span>
+                  <div><h3>字体</h3><p>字体、字号与 macOS 字重增强。</p></div>
+                </div>
+                <div class="form-grid">
+                  <label class="field span-two">
+                    <span>主字体</span>
+                    <input data-config-key="font-family" data-strategy="first" id="font-family" list="font-options" placeholder="默认字体">
+                    <datalist id="font-options"></datalist>
+                  </label>
+                  <label class="field">
+                    <span>字号</span>
+                    <input data-config-key="font-size" id="font-size" type="number" min="6" max="72" step="0.5" placeholder="13">
+                  </label>
+                  <label class="field">
+                    <span>字体加粗</span>
+                    <select data-config-key="font-thicken" id="font-thicken">
+                      <option value="">跟随默认</option>
+                      <option value="true">开启</option>
+                      <option value="false">关闭</option>
+                    </select>
+                  </label>
+                </div>
+              </article>
+
+              <article class="settings-card">
+                <div class="settings-card-heading">
+                  <span class="settings-icon">◫</span>
+                  <div><h3>背景</h3><p>透明度与模糊效果；透明度变更需重启 Ghostty。</p></div>
+                </div>
+                <div class="form-grid">
+                  <label class="field">
+                    <span>背景不透明度</span>
+                    <input data-config-key="background-opacity" id="background-opacity" type="number" min="0.05" max="1" step="0.05" placeholder="1">
+                  </label>
+                  <label class="field">
+                    <span>背景模糊</span>
+                    <select data-config-key="background-blur" id="background-blur">
+                      <option value="">跟随默认</option>
+                      <option value="false">关闭</option>
+                      <option value="true">标准模糊</option>
+                      <option value="20">强度 20</option>
+                      <option value="40">强度 40</option>
+                      <option value="macos-glass-regular">macOS 玻璃</option>
+                      <option value="macos-glass-clear">macOS 透明玻璃</option>
+                    </select>
+                  </label>
+                </div>
+              </article>
+
+              <article class="settings-card">
+                <div class="settings-card-heading">
+                  <span class="settings-icon">▯</span>
+                  <div><h3>光标</h3><p>控制形状、闪烁以及打字时鼠标行为。</p></div>
+                </div>
+                <div class="form-grid">
+                  <label class="field">
+                    <span>光标形状</span>
+                    <select data-config-key="cursor-style" id="cursor-style">
+                      <option value="">跟随默认</option>
+                      <option value="block">方块</option>
+                      <option value="bar">竖线</option>
+                      <option value="underline">下划线</option>
+                      <option value="block_hollow">空心方块</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>光标闪烁</span>
+                    <select data-config-key="cursor-style-blink" id="cursor-style-blink">
+                      <option value="">由终端程序决定</option>
+                      <option value="true">始终闪烁</option>
+                      <option value="false">不闪烁</option>
+                    </select>
+                  </label>
+                  <label class="field span-two">
+                    <span>打字时隐藏鼠标</span>
+                    <select data-config-key="mouse-hide-while-typing" id="mouse-hide-while-typing">
+                      <option value="">跟随默认</option>
+                      <option value="true">开启</option>
+                      <option value="false">关闭</option>
+                    </select>
+                  </label>
+                </div>
+              </article>
+
+              <article class="settings-card">
+                <div class="settings-card-heading">
+                  <span class="settings-icon">▣</span>
+                  <div><h3>窗口</h3><p>留白、标题栏和关闭确认。</p></div>
+                </div>
+                <div class="form-grid">
+                  <label class="field">
+                    <span>水平留白</span>
+                    <input data-config-key="window-padding-x" id="window-padding-x" type="text" inputmode="numeric" placeholder="2 或 2,4">
+                  </label>
+                  <label class="field">
+                    <span>垂直留白</span>
+                    <input data-config-key="window-padding-y" id="window-padding-y" type="text" inputmode="numeric" placeholder="2 或 2,4">
+                  </label>
+                  <label class="field">
+                    <span>macOS 标题栏</span>
+                    <select data-config-key="macos-titlebar-style" id="macos-titlebar-style">
+                      <option value="">跟随默认</option>
+                      <option value="native">原生</option>
+                      <option value="transparent">透明</option>
+                      <option value="tabs">集成标签页</option>
+                      <option value="hidden">隐藏</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>关闭确认</span>
+                    <select data-config-key="confirm-close-surface" id="confirm-close-surface">
+                      <option value="">跟随默认</option>
+                      <option value="true">需要时确认</option>
+                      <option value="always">总是确认</option>
+                      <option value="false">从不确认</option>
+                    </select>
+                  </label>
+                  <label class="field span-two">
+                    <span>选中即复制</span>
+                    <select data-config-key="copy-on-select" id="copy-on-select">
+                      <option value="">跟随默认</option>
+                      <option value="true">开启</option>
+                      <option value="false">关闭</option>
+                    </select>
+                  </label>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="panel raw-panel" data-panel-content="raw">
+            <div class="section-heading raw-heading">
+              <div>
+                <p class="eyebrow">SOURCE OF TRUTH</p>
+                <h2>原始 Ghostty 配置</h2>
+                <p>这里保留未被表单覆盖的注释、快捷键和高级配置。</p>
+              </div>
+              <button class="secondary-button" type="button" id="reload-button">从磁盘重新读取</button>
+            </div>
+            <div class="editor-shell">
+              <div class="editor-toolbar">
+                <span id="editor-file">config.ghostty</span>
+                <span id="editor-stats">0 行</span>
+              </div>
+              <textarea id="raw-config" spellcheck="false" aria-label="Ghostty 原始配置"></textarea>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <footer class="actionbar">
+        <div class="action-status">
+          <span class="dirty-dot" id="dirty-dot"></span>
+          <span id="dirty-label">已与磁盘同步</span>
+        </div>
+        <div class="action-buttons">
+          <button class="secondary-button" type="button" id="validate-button">校验配置</button>
+          <button class="secondary-button" type="button" id="save-only-button">仅保存</button>
+          <button class="primary-button" type="button" id="save-button">保存并加载</button>
+        </div>
+      </footer>
+    </div>
+
+    <button class="back-to-top" id="back-to-top" type="button" aria-label="回到顶部" title="回到顶部" aria-hidden="true" tabindex="-1">
+      <span aria-hidden="true">↑</span>
+    </button>
+
+    <section class="shutdown-screen is-hidden" id="shutdown-screen" role="status" aria-live="polite">
+      <div class="shutdown-card">
+        <div class="shutdown-symbol" aria-hidden="true">⏻</div>
+        <p class="eyebrow">LOCAL CONFIGURATOR</p>
+        <h2 id="shutdown-title">Ghosttyle 已退出</h2>
+        <p id="shutdown-message">本地 npm/Node 服务进程已经停止。</p>
+        <button class="primary-button" id="close-page-button" type="button">关闭页面</button>
+        <small id="shutdown-hint">如果浏览器没有自动关闭，请按 ⌘W 或 Ctrl+W。</small>
+      </div>
+    </section>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
