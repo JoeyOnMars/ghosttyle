@@ -50,6 +50,14 @@ When you're done, simply click the **Exit** button in the top-right corner of th
 - If you ran it manually from your own shell, you can also press `Ctrl+C` to exit.
 
 ### Advanced & Tips
+- **Custom port & auto-fallback**:
+  Ghosttyle defaults to port `4173`. If occupied, it automatically advances to the next available port (`4174`, `4175`...). You can also specify a port manually:
+  ```bash
+  npm start -- --port=5173
+  # or directly with node / environment variable:
+  node server.mjs --open --port=5173
+  PORT=5173 npm start
+  ```
 - **Edit a custom config path**:
   ```bash
   node server.mjs --open --config=/absolute/path/to/config.ghostty
@@ -115,6 +123,14 @@ Ghosttyle 是一个非官方、支持中英文的 Ghostty 本地可视化配置�
 - 在个人终端手动启动的用户，也可随时按 `Ctrl + C` 退出。
 
 #### 高级技巧与注意事项
+- **自定义端口与冲突自动避让**：
+  Ghosttyle 默认监听 `4173` 端口。如果该端口已被占用，它会**自动顺延探测下一个可用端口**（如 `4174`、`4175`...）并拉起浏览器，杜绝端口冲突报错。你也可以手动指定端口：
+  ```bash
+  npm start -- --port=5173
+  # 或者直接通过 node 或环境变量指定：
+  node server.mjs --open --port=5173
+  PORT=5173 npm start
+  ```
 - **指定配置文件**：
   ```bash
   node server.mjs --open --config=/absolute/path/to/config.ghostty

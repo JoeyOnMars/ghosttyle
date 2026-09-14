@@ -1,10 +1,11 @@
+import http from "node:http";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { createGhosttyServer, findGhosttyBinary, reloadGhostty } from "../server.mjs";
+import { createGhosttyServer, findGhosttyBinary, listenWithFallback, reloadGhostty } from "../server.mjs";
 
 test("macOS reload bridge performs Ghostty reload_config action", async () => {
   let invocation;
@@ -146,3 +147,21 @@ test("local API reads, validates, backs up, and saves config", async (context) =
   assert.equal(reloaded.reload.ok, true);
   assert.equal(reloadCalls, 2);
 });
+
+test("listenWithFallback automatically advances port when colliding", async (context) => {
+  const blockingServer = http.createServer();
+  const collidingServer = http.createServer();
+
+  await new Promise((resolve) => blockingServer.listen(0, "127.0.0.1", resolve));
+  const occupiedPort = blockingServer.address().port;
+
+  context.after(async () => {
+    await new Promise((resolve) => blockingServer.close(resolve));
+    await new Promise((resolve) => collidingServer.close(resolve));
+  });
+
+  const resolvedPort = await listenWithFallback(collidingServer, occupiedPort, "127.0.0.1");
+  assert.equal(resolvedPort, occupiedPort + 1);
+  assert.equal(collidingServer.address().port, occupiedPort + 1);
+});
+

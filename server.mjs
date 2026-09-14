@@ -555,6 +555,41 @@ async function openBrowser(url) {
   }
 }
 
+export function listenWithFallback(server, initialPort, host = "127.0.0.1", maxAttempts = 30) {
+  return new Promise((resolve, reject) => {
+    let currentPort = initialPort;
+    let attempts = 0;
+
+    function tryListen() {
+      const onError = (error) => {
+        server.removeListener("listening", onListening);
+        if (error.code === "EADDRINUSE" && currentPort > 0 && attempts < maxAttempts && currentPort < 65535) {
+          attempts += 1;
+          const previousPort = currentPort;
+          currentPort += 1;
+          console.warn(`Ghosttyle: port ${previousPort} is in use, trying ${currentPort}…`);
+          tryListen();
+        } else {
+          reject(error);
+        }
+      };
+
+      const onListening = () => {
+        server.removeListener("error", onError);
+        const address = server.address();
+        const port = typeof address === "object" && address ? address.port : currentPort;
+        resolve(port);
+      };
+
+      server.once("error", onError);
+      server.once("listening", onListening);
+      server.listen(currentPort, host);
+    }
+
+    tryListen();
+  });
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   let server;
@@ -576,16 +611,14 @@ async function main() {
   const created = await createGhosttyServer({ configPath: args.configPath, shutdownAction });
   ({ server } = created);
   const { binary, configPath } = created;
-  server.listen(args.port, "127.0.0.1", async () => {
-    const address = server.address();
-    const port = typeof address === "object" && address ? address.port : args.port;
-    const url = `http://127.0.0.1:${port}`;
-    console.log(`Ghosttyle: ${url}`);
-    console.log(`Ghostty: ${binary || "not found"}`);
-    console.log(`Config: ${configPath}`);
-    console.log("Press Ctrl+C to stop the local server.");
-    if (args.open) await openBrowser(url);
-  });
+
+  const port = await listenWithFallback(server, args.port, "127.0.0.1");
+  const url = `http://127.0.0.1:${port}`;
+  console.log(`Ghosttyle: ${url}`);
+  console.log(`Ghostty: ${binary || "not found"}`);
+  console.log(`Config: ${configPath}`);
+  console.log("Press Ctrl+C to stop the local server.");
+  if (args.open) await openBrowser(url);
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
