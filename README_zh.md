@@ -2,7 +2,11 @@
 
 **让 Ghostty 配置变得得心应手。**
 
-[English](README.md) | [简体中文](README_zh.md)
+<p align="left">
+  <a href="README.md"><img src="https://img.shields.io/badge/Language-English-007acc?style=for-the-badge" alt="English"></a>
+  <a href="README_zh.md"><img src="https://img.shields.io/badge/语言-简体中文-de342f?style=for-the-badge" alt="简体中文"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-success?style=for-the-badge" alt="License"></a>
+</p>
 
 Ghosttyle 是一个非官方、支持中英文双语的 [Ghostty](https://ghostty.org) 本地可视化配置工作台。它完全运行在你的本机，自动读取已安装 Ghostty 中的主题与字体，在保存配置前通过 Ghostty 官方校验器进行安全检查，并可在 macOS 上通过 Ghostty 1.3 原生 AppleScript API 即时重载正在运行的终端。
 
