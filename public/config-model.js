@@ -8,6 +8,7 @@ export const FIELD_DEFINITIONS = [
   { key: "background-blur" },
   { key: "cursor-style" },
   { key: "cursor-style-blink" },
+  { key: "shell-integration-features" },
   { key: "window-padding-x" },
   { key: "window-padding-y" },
   { key: "macos-titlebar-style" },

@@ -137,6 +137,46 @@ test("local API reads, validates, backs up, and saves config", async (context) =
   assert.ok((await stat(saved.backupPath)).isFile());
   assert.equal(await readFile(configPath, "utf8"), savedContent);
 
+  const historyResponse = await fetch(`${baseUrl}/api/history`);
+  assert.equal(historyResponse.status, 200);
+  const historyData = await historyResponse.json();
+  assert.ok(Array.isArray(historyData.items));
+  assert.ok(historyData.items.length >= 1);
+  const latestBackup = historyData.items[0];
+  assert.ok(latestBackup.id);
+  assert.ok(latestBackup.createdAt);
+  assert.ok(latestBackup.size > 0);
+
+  const contentResponse = await fetch(`${baseUrl}/api/history/content?id=${encodeURIComponent(latestBackup.id)}`);
+  assert.equal(contentResponse.status, 200);
+  const contentData = await contentResponse.json();
+  assert.equal(contentData.id, latestBackup.id);
+  assert.ok(contentData.content.includes("theme = Adwaita"));
+
+  const restoreResponse = await fetch(`${baseUrl}/api/history/restore`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Ghostty-UI-Token": state.token },
+    body: JSON.stringify({ backupId: latestBackup.id }),
+  });
+  assert.equal(restoreResponse.status, 200);
+  const restoreData = await restoreResponse.json();
+  assert.equal(restoreData.restored, true);
+  assert.equal(await readFile(configPath, "utf8"), contentData.content);
+
+  const renameResponse = await fetch(`${baseUrl}/api/history/rename`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Ghostty-UI-Token": state.token },
+    body: JSON.stringify({ backupId: latestBackup.id, label: "My Retro Theme" }),
+  });
+  assert.equal(renameResponse.status, 200);
+  const renameData = await renameResponse.json();
+  assert.equal(renameData.ok, true);
+  assert.equal(renameData.label, "My Retro Theme");
+
+  const historyAfterRename = await (await fetch(`${baseUrl}/api/history`)).json();
+  const updatedItem = historyAfterRename.items.find((item) => item.id === latestBackup.id);
+  assert.equal(updatedItem?.label, "My Retro Theme");
+
   const reloadResponse = await fetch(`${baseUrl}/api/reload`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Ghostty-UI-Token": state.token },
@@ -145,7 +185,44 @@ test("local API reads, validates, backs up, and saves config", async (context) =
   assert.equal(reloadResponse.status, 200);
   const reloaded = await reloadResponse.json();
   assert.equal(reloaded.reload.ok, true);
-  assert.equal(reloadCalls, 2);
+  assert.equal(reloadCalls, 3);
+
+  const historyBefore = await (await fetch(`${baseUrl}/api/history`)).json();
+  const liveSyncContent = "theme = Adwaita\nfont-size = 16\n";
+  const liveSyncResponse = await fetch(`${baseUrl}/api/live-sync`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Ghostty-UI-Token": state.token },
+    body: JSON.stringify({ content: liveSyncContent }),
+  });
+  assert.equal(liveSyncResponse.status, 200);
+  const liveSyncData = await liveSyncResponse.json();
+  assert.equal(liveSyncData.liveSynced, true);
+  assert.equal(liveSyncData.reload.ok, true);
+  assert.equal(reloadCalls, 4);
+  assert.equal(await readFile(configPath, "utf8"), liveSyncContent);
+  const historyAfter = await (await fetch(`${baseUrl}/api/history`)).json();
+  assert.equal(historyAfter.items.length, historyBefore.items.length);
+
+  const invalidLiveSync = await fetch(`${baseUrl}/api/live-sync`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Ghostty-UI-Token": state.token },
+    body: JSON.stringify({ content: "theme = NonExistentTheme\n" }),
+  });
+  assert.equal(invalidLiveSync.status, 422);
+  const invalidLiveData = await invalidLiveSync.json();
+  assert.equal(invalidLiveData.liveSynced, false);
+  assert.equal(invalidLiveData.validation.valid, false);
+
+  const marketResponse = await fetch(`${baseUrl}/api/market`);
+  assert.equal(marketResponse.status, 200);
+  const market = await marketResponse.json();
+  assert.ok(Array.isArray(market.themes));
+  assert.ok(Array.isArray(market.fonts));
+  assert.ok(market.themes.length >= 5);
+  assert.ok(market.fonts.length >= 5);
+  assert.ok(market.themes[0].name);
+  assert.equal(typeof market.themes[0].installed, "boolean");
+  assert.equal(typeof market.fonts[0].installed, "boolean");
 });
 
 test("listenWithFallback automatically advances port when colliding", async (context) => {

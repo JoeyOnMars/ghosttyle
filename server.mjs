@@ -1,5 +1,5 @@
 import { createServer as createHttpServer } from "node:http";
-import { access, copyFile, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { access, copyFile, mkdir, mkdtemp, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { constants as fsConstants } from "node:fs";
 import { execFile, execFileSync, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -7,6 +7,7 @@ import { homedir, platform, tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { CURATED_THEMES, CURATED_FONTS, installTheme, installFont } from "./market.mjs";
 
 const execFileAsync = promisify(execFile);
 const ROOT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -294,9 +295,19 @@ export async function reloadGhostty(options = {}) {
     'if application "Ghostty" is not running then error "Ghostty is not running." number 1001',
     'tell application "Ghostty"',
     '  if (count of windows) is 0 then error "Ghostty has no terminal window." number 1002',
-    '  set targetTerminal to focused terminal of selected tab of front window',
-    '  set didReload to perform action "reload_config" on targetTerminal',
-    '  return didReload',
+    '  try',
+    '    repeat with w in windows',
+    '      repeat with t in tabs of w',
+    '        repeat with trm in terminals of t',
+    '          perform action "reload_config" on trm',
+    '        end repeat',
+    '      end repeat',
+    '    end repeat',
+    '    return true',
+    '  on error',
+    '    set targetTerminal to focused terminal of selected tab of front window',
+    '    return perform action "reload_config" on targetTerminal',
+    '  end try',
     'end tell',
   ].join("\n");
   const execute = options.execute ?? ((file, args) => execFileAsync(file, args, {
@@ -378,6 +389,105 @@ export async function saveConfig(configPath, content) {
   return { backupPath };
 }
 
+export async function writeConfigDirect(configPath, content) {
+  const directory = path.dirname(configPath);
+  await mkdir(directory, { recursive: true });
+
+  let mode = 0o644;
+  if (await fileExists(configPath)) {
+    try {
+      const metadata = await stat(configPath);
+      mode = metadata.mode & 0o777;
+    } catch {}
+  }
+
+  const temporaryPath = path.join(directory, `.${path.basename(configPath)}.live-${process.pid}-${Date.now()}`);
+  try {
+    await writeFile(temporaryPath, content.endsWith("\n") ? content : `${content}\n`, {
+      encoding: "utf8",
+      mode,
+    });
+    await rename(temporaryPath, configPath);
+  } catch (error) {
+    await rm(temporaryPath, { force: true });
+    throw error;
+  }
+}
+
+export async function readHistoryLabels(configPath) {
+  const directory = path.dirname(configPath);
+  const baseName = path.basename(configPath);
+  const labelsFilePath = path.join(directory, `${baseName}.history-labels.json`);
+  try {
+    const raw = await readFile(labelsFilePath, "utf8");
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+export async function saveHistoryLabel(configPath, backupId, label) {
+  const directory = path.dirname(configPath);
+  const baseName = path.basename(configPath);
+  const labelsFilePath = path.join(directory, `${baseName}.history-labels.json`);
+  const safeId = String(backupId || "").replace(/[^a-zA-Z0-9_-]/g, "");
+  if (!safeId) throw new Error("Invalid backup ID.");
+  const labels = await readHistoryLabels(configPath);
+  const cleanLabel = String(label || "").trim();
+  if (cleanLabel) {
+    labels[safeId] = cleanLabel;
+  } else {
+    delete labels[safeId];
+  }
+  await writeFile(labelsFilePath, JSON.stringify(labels, null, 2), "utf8");
+  return labels;
+}
+
+export async function listConfigBackups(configPath) {
+  const directory = path.dirname(configPath);
+  const baseName = path.basename(configPath);
+  const prefix = `${baseName}.backup-`;
+  const labels = await readHistoryLabels(configPath);
+  try {
+    const entries = await readdir(directory);
+    const backupFiles = entries.filter((name) => name.startsWith(prefix));
+    const list = [];
+    for (const fileName of backupFiles) {
+      const filePath = path.join(directory, fileName);
+      try {
+        const fileStat = await stat(filePath);
+        const suffix = fileName.slice(prefix.length);
+        list.push({
+          id: suffix,
+          filename: fileName,
+          path: filePath,
+          label: labels[suffix] || "",
+          size: fileStat.size,
+          mtime: fileStat.mtime.getTime(),
+          createdAt: fileStat.mtime.toISOString(),
+          timestamp: fileStat.mtime.toISOString(),
+        });
+      } catch {}
+    }
+    list.sort((left, right) => right.mtime - left.mtime);
+    return list;
+  } catch {
+    return [];
+  }
+}
+
+export async function readBackupContent(configPath, backupId) {
+  const directory = path.dirname(configPath);
+  const baseName = path.basename(configPath);
+  const safeId = String(backupId || "").replace(/[^a-zA-Z0-9_-]/g, "");
+  if (!safeId) throw new Error("Invalid backup ID.");
+  const targetPath = path.join(directory, `${baseName}.backup-${safeId}`);
+  if (!(await fileExists(targetPath))) {
+    throw new Error("Backup file not found.");
+  }
+  return await readFile(targetPath, "utf8");
+}
+
 function jsonResponse(response, statusCode, payload) {
   response.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
@@ -438,11 +548,13 @@ export async function createGhosttyServer(options = {}) {
   let themesPromise;
   let fontsPromise;
 
-  const getThemes = () => {
+  const getThemes = (force = false) => {
+    if (force) themesPromise = null;
     themesPromise ??= loadThemes(binary).catch(() => []);
     return themesPromise;
   };
-  const getFonts = () => {
+  const getFonts = (force = false) => {
+    if (force) fontsPromise = null;
     fontsPromise ??= loadFonts(binary).catch(() => []);
     return fontsPromise;
   };
@@ -527,8 +639,144 @@ export async function createGhosttyServer(options = {}) {
           return;
         }
         const saved = await saveConfig(configPath, body.content);
+        if (typeof body.label === "string" && body.label.trim() && saved.backupPath) {
+          const prefix = `${path.basename(configPath)}.backup-`;
+          const backupFileName = path.basename(saved.backupPath);
+          if (backupFileName.startsWith(prefix)) {
+            const backupId = backupFileName.slice(prefix.length);
+            await saveHistoryLabel(configPath, backupId, body.label.trim());
+          }
+        }
         const reload = body.reload === true ? await reloadAction() : null;
         jsonResponse(response, 200, { validation, ...saved, path: configPath, reload });
+        return;
+      }
+
+      if (url.pathname === "/api/live-sync" && request.method === "POST") {
+        if (request.headers["x-ghostty-ui-token"] !== sessionToken) {
+          jsonResponse(response, 403, { error: "Invalid session token. Refresh the page and try again." });
+          return;
+        }
+        const body = await readJsonBody(request);
+        if (typeof body.content !== "string") {
+          jsonResponse(response, 400, { error: "Configuration content is missing." });
+          return;
+        }
+        const validation = await validateConfig(binary, body.content, configPath);
+        if (!validation.valid) {
+          jsonResponse(response, 422, { liveSynced: false, validation, error: "Validation failed during live sync." });
+          return;
+        }
+        await writeConfigDirect(configPath, body.content);
+        const reload = await reloadAction();
+        jsonResponse(response, 200, { ok: true, liveSynced: true, validation, path: configPath, reload });
+        return;
+      }
+
+      if (url.pathname === "/api/market" && request.method === "GET") {
+        const [themes, fonts] = await Promise.all([getThemes(), getFonts()]);
+        const installedThemeNames = new Set(themes.map((theme) => theme.name.toLowerCase()));
+        const installedFontNames = new Set(fonts.map((font) => font.toLowerCase()));
+
+        const marketThemes = CURATED_THEMES.map((theme) => ({
+          ...theme,
+          installed: installedThemeNames.has(theme.name.toLowerCase()),
+        }));
+        const marketFonts = CURATED_FONTS.map((font) => ({
+          ...font,
+          installed: installedFontNames.has(font.name.toLowerCase()) || (font.fontFamilyMatch && installedFontNames.has(font.fontFamilyMatch.toLowerCase())),
+        }));
+
+        jsonResponse(response, 200, { themes: marketThemes, fonts: marketFonts });
+        return;
+      }
+
+      if (url.pathname === "/api/market/install-theme" && request.method === "POST") {
+        if (request.headers["x-ghostty-ui-token"] !== sessionToken) {
+          jsonResponse(response, 403, { error: "Invalid session token. Refresh the page and try again." });
+          return;
+        }
+        const body = await readJsonBody(request);
+        const result = await installTheme(body);
+        const themes = await getThemes(true);
+        jsonResponse(response, 200, { ok: true, result, themes });
+        return;
+      }
+
+      if (url.pathname === "/api/market/install-font" && request.method === "POST") {
+        if (request.headers["x-ghostty-ui-token"] !== sessionToken) {
+          jsonResponse(response, 403, { error: "Invalid session token. Refresh the page and try again." });
+          return;
+        }
+        const body = await readJsonBody(request);
+        const result = await installFont(body.fontId);
+        const fonts = await getFonts(true);
+        jsonResponse(response, 200, { ok: true, result, fonts });
+        return;
+      }
+
+      if (url.pathname === "/api/history" && request.method === "GET") {
+        const history = await listConfigBackups(configPath);
+        jsonResponse(response, 200, { history, items: history });
+        return;
+      }
+
+      if (url.pathname === "/api/history/content" && request.method === "GET") {
+        const id = url.searchParams.get("id") || "";
+        if (!id) {
+          jsonResponse(response, 400, { error: "Backup ID is required." });
+          return;
+        }
+        try {
+          const content = await readBackupContent(configPath, id);
+          jsonResponse(response, 200, { id, content });
+        } catch (err) {
+          jsonResponse(response, 404, { error: err.message });
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/history/restore" && request.method === "POST") {
+        if (request.headers["x-ghostty-ui-token"] !== sessionToken) {
+          jsonResponse(response, 403, { error: "Invalid session token. Refresh the page and try again." });
+          return;
+        }
+        const body = await readJsonBody(request);
+        const id = body.id || body.backupId || "";
+        if (!id) {
+          jsonResponse(response, 400, { error: "Backup ID is required." });
+          return;
+        }
+        try {
+          const content = await readBackupContent(configPath, id);
+          const validation = await validateConfig(binary, content, configPath);
+          const saved = await saveConfig(configPath, content);
+          const reload = await reloadAction();
+          jsonResponse(response, 200, { ok: true, restored: true, validation, ...saved, content, reload });
+        } catch (err) {
+          jsonResponse(response, 500, { error: err.message });
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/history/rename" && request.method === "POST") {
+        if (request.headers["x-ghostty-ui-token"] !== sessionToken) {
+          jsonResponse(response, 403, { error: "Invalid session token. Refresh the page and try again." });
+          return;
+        }
+        const body = await readJsonBody(request);
+        const id = body.id || body.backupId || "";
+        const label = typeof body.label === "string" ? body.label.trim() : "";
+        if (!id) {
+          jsonResponse(response, 400, { error: "Backup ID is required." });
+          return;
+        }
+        try {
+          const labels = await saveHistoryLabel(configPath, id, label);
+          jsonResponse(response, 200, { ok: true, id, label, labels });
+        } catch (err) {
+          jsonResponse(response, 500, { error: err.message });
+        }
         return;
       }
 
