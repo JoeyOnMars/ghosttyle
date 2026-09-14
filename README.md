@@ -2,6 +2,8 @@
 
 **Shape Ghostty your way.**
 
+[English](README.md) | [简体中文](README_zh.md)
+
 Ghosttyle is an unofficial, bilingual visual configuration studio for [Ghostty](https://ghostty.org). It runs entirely on your machine, discovers themes and fonts from the installed Ghostty application, validates changes with Ghostty itself, and can reload the running terminal through Ghostty's native AppleScript API on macOS.
 
 > Ghosttyle is an independent community project and is not affiliated with or endorsed by the Ghostty project.
