@@ -39,7 +39,7 @@ for arch in arm64 x64; do
   /usr/bin/tar -xzf "$TEMP_DIR/$archive" -C "$TEMP_DIR"
   mkdir -p "$bundle"
 
-  for item in .gitignore Ghosttyle.command README.md package.json public scripts server.mjs; do
+  for item in .gitignore Ghosttyle.command LICENSE README.md package.json public scripts server.mjs; do
     /usr/bin/ditto "$ROOT_DIR/$item" "$bundle/$item"
   done
 

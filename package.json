@@ -4,6 +4,23 @@
   "private": true,
   "type": "module",
   "description": "A bilingual, dependency-free visual configuration studio for Ghostty.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JoeyOnMars/ghosttyle.git"
+  },
+  "homepage": "https://github.com/JoeyOnMars/ghosttyle#readme",
+  "bugs": {
+    "url": "https://github.com/JoeyOnMars/ghosttyle/issues"
+  },
+  "keywords": [
+    "ghostty",
+    "terminal",
+    "configuration",
+    "studio",
+    "themes",
+    "macos"
+  ],
   "scripts": {
     "start": "node server.mjs --open",
     "start:no-open": "node server.mjs",
