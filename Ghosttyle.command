@@ -23,12 +23,12 @@ fi
 
 set +e
 "$node_bin" server.mjs --open
-status=$?
+exit_code=$?
 set -e
 
 # Keep the window open when startup/runtime fails so the error remains visible.
 # Set GHOSTTYLE_KEEP_TERMINAL=1 before launching to disable automatic closing.
-if [[ $status -eq 0 \
+if [[ $exit_code -eq 0 \
   && ( "${TERM_PROGRAM:-}" == "Apple_Terminal" || "${TERM_PROGRAM:-}" == "iTerm.app" ) \
   && "$terminal_tty" == /dev/* \
   && "${GHOSTTYLE_KEEP_TERMINAL:-0}" != "1" ]]; then
@@ -37,4 +37,4 @@ if [[ $status -eq 0 \
     "$terminal_tty" </dev/null >/dev/null 2>&1 &!
 fi
 
-exit "$status"
+exit "$exit_code"

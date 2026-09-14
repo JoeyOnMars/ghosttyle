@@ -1,7 +1,7 @@
 import { createServer as createHttpServer } from "node:http";
 import { access, copyFile, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { constants as fsConstants } from "node:fs";
-import { execFile } from "node:child_process";
+import { execFile, execFileSync, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { homedir, platform, tmpdir } from "node:os";
 import path from "node:path";
@@ -590,11 +590,28 @@ export function listenWithFallback(server, initialPort, host = "127.0.0.1", maxA
   });
 }
 
+function closeTerminalWindow() {
+  if (process.platform !== "darwin" || process.env.GHOSTTYLE_KEEP_TERMINAL === "1") return;
+  try {
+    const tty = execFileSync("/usr/bin/tty", [], { stdio: ["inherit", "pipe", "ignore"], encoding: "utf8" }).trim();
+    if (!tty || !tty.startsWith("/dev/")) return;
+    const scriptPath = path.join(ROOT_DIR, "scripts", "close-terminal.applescript");
+    const child = spawn("/usr/bin/osascript", [scriptPath, tty], {
+      detached: true,
+      stdio: "ignore",
+    });
+    child.unref();
+  } catch {
+    // Non-fatal if not running inside an interactive terminal
+  }
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   let server;
   const shutdownAction = () => new Promise((resolve) => {
     console.log("Ghosttyle: stopping local server…");
+    closeTerminalWindow();
     server.close((error) => {
       if (error) {
         console.error(`Ghosttyle: unable to stop cleanly: ${error.message || error}`);
