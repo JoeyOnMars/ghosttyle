@@ -12,7 +12,7 @@ const execFileAsync = promisify(execFile);
 const ROOT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(ROOT_DIR, "public");
 const MAX_BODY_BYTES = 1024 * 1024;
-const DEFAULT_PORT = 4173;
+const DEFAULT_PORT = 14173;
 
 const CONTENT_TYPES = new Map([
   [".html", "text/html; charset=utf-8"],

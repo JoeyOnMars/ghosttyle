@@ -46,7 +46,7 @@ npm start
 ```
 
 ### 2. Configure in your browser
-Ghosttyle opens automatically at `http://127.0.0.1:4173`:
+Ghosttyle opens automatically at `http://127.0.0.1:14173`:
 - Pick themes from your installed Ghostty palette, customize fonts, cursor, and window settings with live preview.
 - Click **“Save & Reload”** to validate changes and instantly refresh your running Ghostty terminal via macOS AppleScript.
 
@@ -57,7 +57,7 @@ When you're done, simply click the **Exit** button in the top-right corner of th
 
 ### Advanced & Tips
 - **Custom port & auto-fallback**:
-  Ghosttyle defaults to port `4173`. If occupied, it automatically advances to the next available port (`4174`, `4175`...). You can also specify a port manually:
+  Ghosttyle defaults to port `14173`. If occupied, it automatically advances to the next available port (`14174`, `14175`...). You can also specify a port manually:
   ```bash
   npm start -- --port=5173
   # or directly with node / environment variable:
