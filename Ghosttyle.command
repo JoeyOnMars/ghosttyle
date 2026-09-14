@@ -29,7 +29,7 @@ set -e
 # Keep the window open when startup/runtime fails so the error remains visible.
 # Set GHOSTTYLE_KEEP_TERMINAL=1 before launching to disable automatic closing.
 if [[ $status -eq 0 \
-  && "${TERM_PROGRAM:-}" == "Apple_Terminal" \
+  && ( "${TERM_PROGRAM:-}" == "Apple_Terminal" || "${TERM_PROGRAM:-}" == "iTerm.app" ) \
   && "$terminal_tty" == /dev/* \
   && "${GHOSTTYLE_KEEP_TERMINAL:-0}" != "1" ]]; then
   /usr/bin/nohup /usr/bin/osascript \
