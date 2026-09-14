@@ -22,42 +22,41 @@ Ghosttyle is an unofficial, bilingual visual configuration studio for [Ghostty](
 
 ## Quick start
 
-### Portable ZIP (no Node.js installation required)
+### 1. Launch
 
-Download the ZIP matching your Mac from [GitHub Releases](https://github.com/JoeyOnMars/ghosttyle/releases/latest), extract it, and double-click `Ghosttyle.command`:
-
-- `macos-arm64` for Apple Silicon Macs.
-- `macos-x64` for Intel Macs.
-
-The portable ZIP includes its own Node.js runtime. It does not install or replace Node.js on your Mac.
-
-### Source checkout
-
-On macOS, double-click:
-
+**Option A: Portable ZIP (Recommended, no Node.js required)**  
+Download the ZIP matching your Mac from [GitHub Releases](https://github.com/JoeyOnMars/ghosttyle/releases/latest), extract it, and double-click:
 ```text
 Ghosttyle.command
 ```
+- `macos-arm64` for Apple Silicon Macs.
+- `macos-x64` for Intel Macs.  
+*(Includes its own official Node.js runtime. Does not install or modify anything in your global system.)*
 
-Or run:
-
+**Option B: From Source**  
+Clone this repository and double-click `Ghosttyle.command`, or run:
 ```bash
 npm start
 ```
 
-Ghosttyle opens at `http://127.0.0.1:4173`. Keep the terminal window open while using the UI; press `Ctrl+C` to stop the server.
+### 2. Configure in your browser
+Ghosttyle opens automatically at `http://127.0.0.1:4173`:
+- Pick themes from your installed Ghostty palette, customize fonts, cursor, and window settings with live preview.
+- Click **“Save & Reload”** to validate changes and instantly refresh your running Ghostty terminal via macOS AppleScript.
 
-You can also use the **Exit** button in the top-right corner to stop the local npm/Node process. When Ghosttyle was opened by double-clicking `Ghosttyle.command` in Apple Terminal, a clean exit also closes that launcher tab or window; startup and runtime errors leave it open for diagnosis. Set `GHOSTTYLE_KEEP_TERMINAL=1` when launching if you prefer to keep it open. Ghosttyle tries to close its browser tab; if the browser blocks automatic closing, the final page asks you to close the tab manually.
+### 3. Exit gracefully
+When you're done, simply click the **Exit** button in the top-right corner of the web page:
+- Ghosttyle stops the local process and **automatically closes the launcher terminal tab/window**.
+- If you ran it manually from your own shell, you can also press `Ctrl+C` to exit.
 
-To edit a non-default config file:
-
-```bash
-node server.mjs --open --config=/absolute/path/to/config.ghostty
-```
-
-The first “Save & Reload” may trigger a macOS Automation permission prompt. Allow the terminal running Ghosttyle to control Ghostty. If permission was denied previously, enable it under **System Settings → Privacy & Security → Automation**.
-
-Some Ghostty options, including `background-opacity`, still require a full Ghostty restart.
+### Advanced & Tips
+- **Edit a custom config path**:
+  ```bash
+  node server.mjs --open --config=/absolute/path/to/config.ghostty
+  ```
+- **Keep launcher terminal open**: Launch with `GHOSTTYLE_KEEP_TERMINAL=1` if you want to inspect startup/runtime logs after exit.
+- **macOS Automation permission**: The first “Save & Reload” may trigger a permission prompt allowing the terminal to control Ghostty. Allow it under **System Settings → Privacy & Security → Automation**.
+- **Restart requirement**: A few Ghostty options, including `background-opacity`, still require a full Ghostty restart to take effect.
 
 ## Development
 
@@ -79,12 +78,12 @@ The check runs syntax validation, unit tests, i18n key parity tests, config-mode
 
 Ghosttyle 是一个非官方、支持中英文的 Ghostty 本地可视化配置器。它直接读取本机 Ghostty 的主题与字体，通过 Ghostty 官方校验器检查配置，并可在 macOS 上使用 Ghostty 1.3 原生 AppleScript API 重新加载配置。
 
-主要功能：
+### 主要功能
 
 - 中文 / English 一键切换并记忆选择。
 - 网页界面支持跟随系统、浅色和深色模式。
 - 浅色 Ghostty 主题和深色 Ghostty 主题分别实时预览。
-- 可搜索的本机主题画廊。
+- 可搜索的本机主题画廊（读取自 `ghostty +list-themes`）。
 - 字体、背景、光标和窗口常用设置。
 - 保留注释、快捷键和高级选项的原始配置编辑器。
 - 保存前由 Ghostty 自身执行配置校验。
@@ -93,14 +92,33 @@ Ghosttyle 是一个非官方、支持中英文的 Ghostty 本地可视化配置�
 - 服务只监听 `127.0.0.1`，不会将配置上传到网络。
 - 不需要安装第三方 npm 依赖。
 
-在 Finder 中双击 `Ghosttyle.command`，或运行：
+### 快速上手
 
-```bash
-npm start
-```
+#### 1. 启动
+- **绿色免安装包（推荐，无需预装 Node.js）**：  
+  从 [GitHub Releases](https://github.com/JoeyOnMars/ghosttyle/releases/latest) 下载与你的 Mac 匹配的便携 ZIP（Apple Silicon 选 `macos-arm64`，Intel 选 `macos-x64`）。解压后直接双击 `Ghosttyle.command` 即可。  
+  *(已内置官方 Node.js 运行时，不修改且不污染系统全局环境。)*
+- **源码运行**：  
+  克隆仓库后双击 `Ghosttyle.command`，或在终端运行：
+  ```bash
+  npm start
+  ```
 
-从 [GitHub Releases](https://github.com/JoeyOnMars/ghosttyle/releases/latest) 下载时，请选择与 Mac 匹配的便携 ZIP：Apple Silicon 使用 `macos-arm64`，Intel Mac 使用 `macos-x64`。便携 ZIP 已内置 Node.js，不会安装或替换本机 Node.js；解压后直接双击 `Ghosttyle.command` 即可。
+#### 2. 浏览器可视化配置
+启动后会自动在默认浏览器打开 `http://127.0.0.1:4173`：
+- 在网页界面中直观浏览主题画廊、微调字体与显示样式，实时查看终端视觉效果。
+- 点击**“保存并加载”**，配置会自动通过语法校验写入，并利用 macOS AppleScript 驱动 Ghostty 立即生效。
 
-也可以点击网页右上角的“退出”按钮停止本地 npm/Node 进程。通过 Apple Terminal 双击 `Ghosttyle.command` 启动时，正常退出还会自动关闭这个启动器自己的标签页或窗口；如果启动或运行报错，窗口会保留以便排查。如需始终保留窗口，可在启动时设置 `GHOSTTYLE_KEEP_TERMINAL=1`。Ghosttyle 会尝试自动关闭浏览器标签页；如果浏览器阻止自动关闭，退出完成页会提示你手动关闭。
+#### 3. 优雅退出
+配置完成后，直接点击网页右上角的**“退出”**按钮：
+- Ghosttyle 会停止本地服务，并**自动关闭启动时弹出的终端窗口**，体验干净利落。
+- 在个人终端手动启动的用户，也可随时按 `Ctrl + C` 退出。
 
-首次使用“保存并加载”时，macOS 可能询问是否允许终端控制 Ghostty，请选择“允许”。`background-opacity` 等少数配置仍需完全重启 Ghostty 才能生效。
+#### 高级技巧与注意事项
+- **指定配置文件**：
+  ```bash
+  node server.mjs --open --config=/absolute/path/to/config.ghostty
+  ```
+- **保留启动窗口**：如需在退出后保留终端窗口查看运行日志，可在启动前设置环境变量 `GHOSTTYLE_KEEP_TERMINAL=1`。
+- **macOS 自动化权限**：首次使用“保存并加载”时，系统可能询问是否允许终端控制 Ghostty，请勾选“允许”（若误点拒绝，可在 **系统设置 → 隐私与安全性 → 自动化** 中重新开启）。
+- **部分配置需重启**：`background-opacity`（背景透明度）等少数 Ghostty 底层参数仍需完全重启 Ghostty 才能生效。
