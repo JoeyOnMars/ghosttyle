@@ -1824,7 +1824,6 @@ async function reloadGhosttyNow() {
 async function saveCurrentConfig(options = {}) {
   const shouldReload = options.reload === true && state.automation.reloadSupported;
   if (shouldReload && !isDirty()) return reloadGhosttyNow();
-  const prevOpacity = getConfigValue(state.savedContent, "background-opacity");
   setBusy(true);
   try {
     const payload = await post("/api/save", state.content, { reload: shouldReload });
@@ -2200,6 +2199,13 @@ function bindEvents() {
       mediaQuery.addListener(handler);
     }
   }
+
+  window.addEventListener("keydown", (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+      event.preventDefault();
+      saveCurrentConfig({ reload: state.automation.reloadSupported });
+    }
+  });
 
   window.addEventListener("beforeunload", (event) => {
     if (shutdownInProgress || !isDirty()) return;

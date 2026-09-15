@@ -39,7 +39,7 @@ for arch in arm64 x64; do
   /usr/bin/tar -xzf "$TEMP_DIR/$archive" -C "$TEMP_DIR"
   mkdir -p "$bundle"
 
-  for item in .gitignore Ghosttyle.command LICENSE README.md README_zh.md package.json public scripts server.mjs; do
+  for item in .gitignore Ghosttyle.command LICENSE README.md README_zh.md package.json public scripts server.mjs market.mjs; do
     /usr/bin/ditto "$ROOT_DIR/$item" "$bundle/$item"
   done
 
@@ -47,6 +47,14 @@ for arch in arm64 x64; do
   cp "$TEMP_DIR/$extracted/bin/node" "$bundle/runtime/node"
   cp "$TEMP_DIR/$extracted/LICENSE" "$bundle/licenses/Node.js-LICENSE"
   chmod +x "$bundle/runtime/node" "$bundle/Ghosttyle.command"
+
+  # 自动化门禁：使用当前 node 验证 bundle 内部所有模块的导入闭包与语法完整性
+  (
+    cd "$bundle"
+    node --check server.mjs
+    node --check market.mjs
+    node --input-type=module -e "import('./server.mjs'); console.log('Bundle integrity verified for ${arch}.')"
+  )
 
   /usr/bin/ditto -c -k --keepParent "$bundle" "$output"
 done
