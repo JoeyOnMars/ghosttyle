@@ -1,9 +1,20 @@
+import { access, mkdir, writeFile } from "node:fs/promises";
 import { homedir, platform } from "node:os";
 import path from "node:path";
-import { mkdir, writeFile } from "node:fs/promises";
 
-export function getUserThemesDirectory() {
+export async function getUserThemesDirectory(baseConfigPath = "") {
   const home = homedir();
+  if (baseConfigPath) {
+    const parentDir = path.dirname(baseConfigPath);
+    return path.join(parentDir, "themes");
+  }
+  if (platform() === "darwin") {
+    const appSupportDir = path.join(home, "Library", "Application Support", "com.mitchellh.ghostty");
+    try {
+      await access(appSupportDir);
+      return path.join(appSupportDir, "themes");
+    } catch {}
+  }
   return path.join(home, ".config", "ghostty", "themes");
 }
 
@@ -294,7 +305,11 @@ export const CURATED_FONTS = [
     tags: ["Ligatures", "Popular", "High Legibility"],
     previewText: "const hash = await crypto.subtle.digest('SHA-256', buf); // => !== >= <=",
     homepage: "https://www.jetbrains.com/lp/mono/",
-    downloadUrl: "https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/ttf/JetBrainsMono-Regular.ttf",
+    downloadUrl: "https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@master/fonts/ttf/JetBrainsMono-Regular.ttf",
+    downloadUrls: [
+      "https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@master/fonts/ttf/JetBrainsMono-Regular.ttf",
+      "https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/ttf/JetBrainsMono-Regular.ttf",
+    ],
     filename: "JetBrainsMono-Regular.ttf",
     fontFamilyMatch: "JetBrains Mono"
   },
@@ -307,7 +322,11 @@ export const CURATED_FONTS = [
     tags: ["Ligatures", "Classic", "Dev Favorite"],
     previewText: "fn calculate_hash<T: Hash>(item: &T) -> u64 { item.hash() }",
     homepage: "https://github.com/tonsky/FiraCode",
-    downloadUrl: "https://raw.githubusercontent.com/tonsky/FiraCode/master/distr/ttf/FiraCode-Regular.ttf",
+    downloadUrl: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/firacode/FiraCode%5Bwght%5D.ttf",
+    downloadUrls: [
+      "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/firacode/FiraCode%5Bwght%5D.ttf",
+      "https://raw.githubusercontent.com/google/fonts/main/ofl/firacode/FiraCode%5Bwght%5D.ttf",
+    ],
     filename: "FiraCode-Regular.ttf",
     fontFamilyMatch: "Fira Code"
   },
@@ -320,7 +339,11 @@ export const CURATED_FONTS = [
     tags: ["Ligatures", "Microsoft", "Clean"],
     previewText: "git commit -m 'feat: modernize terminal visuals' # [===] => 100%",
     homepage: "https://github.com/microsoft/cascadia-code",
-    downloadUrl: "https://raw.githubusercontent.com/microsoft/cascadia-code/main/assets/CascadiaCode.ttf",
+    downloadUrl: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/cascadiacode/CascadiaCode%5Bwght%5D.ttf",
+    downloadUrls: [
+      "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/cascadiacode/CascadiaCode%5Bwght%5D.ttf",
+      "https://raw.githubusercontent.com/google/fonts/main/ofl/cascadiacode/CascadiaCode%5Bwght%5D.ttf",
+    ],
     filename: "CascadiaCode-Regular.ttf",
     fontFamilyMatch: "Cascadia Code"
   },
@@ -333,7 +356,11 @@ export const CURATED_FONTS = [
     tags: ["Clean", "High Contrast", "Solid"],
     previewText: "SELECT * FROM users WHERE status = 'ACTIVE' ORDER BY created_at DESC;",
     homepage: "https://source-foundry.github.io/Hack/",
-    downloadUrl: "https://raw.githubusercontent.com/source-foundry/Hack/master/build/ttf/Hack-Regular.ttf",
+    downloadUrl: "https://cdn.jsdelivr.net/gh/source-foundry/Hack@master/build/ttf/Hack-Regular.ttf",
+    downloadUrls: [
+      "https://cdn.jsdelivr.net/gh/source-foundry/Hack@master/build/ttf/Hack-Regular.ttf",
+      "https://raw.githubusercontent.com/source-foundry/Hack/master/build/ttf/Hack-Regular.ttf",
+    ],
     filename: "Hack-Regular.ttf",
     fontFamilyMatch: "Hack"
   },
@@ -346,19 +373,23 @@ export const CURATED_FONTS = [
     tags: ["Vercel", "Modern", "Minimalist"],
     previewText: "export default async function Page({ params }: { params: Props })",
     homepage: "https://vercel.com/font",
-    downloadUrl: "https://raw.githubusercontent.com/vercel/geist-font/main/packages/geist-mono/dist/GeistMono-Regular.otf",
-    filename: "GeistMono-Regular.otf",
+    downloadUrl: "https://cdn.jsdelivr.net/gh/vercel/geist-font@main/fonts/GeistMono/ttf/GeistMono-Regular.ttf",
+    downloadUrls: [
+      "https://cdn.jsdelivr.net/gh/vercel/geist-font@main/fonts/GeistMono/ttf/GeistMono-Regular.ttf",
+      "https://raw.githubusercontent.com/vercel/geist-font/main/fonts/GeistMono/ttf/GeistMono-Regular.ttf",
+    ],
+    filename: "GeistMono-Regular.ttf",
     fontFamilyMatch: "Geist Mono"
   }
 ];
 
-export async function installTheme(themeData) {
+export async function installTheme(themeData, options = {}) {
   const themeName = (themeData.name || "").trim().replace(/[/\\]/g, "");
   if (!themeName) {
     throw new Error("Invalid theme name.");
   }
 
-  const userThemeDir = getUserThemesDirectory();
+  const userThemeDir = options.themesDirectory || await getUserThemesDirectory(options.configPath || "");
   await mkdir(userThemeDir, { recursive: true });
   const themePath = path.join(userThemeDir, themeName);
 
@@ -368,24 +399,32 @@ export async function installTheme(themeData) {
   return { ok: true, name: themeName, path: themePath };
 }
 
-export async function installFont(fontId) {
+export async function installFont(fontId, options = {}) {
   const font = CURATED_FONTS.find((item) => item.id === fontId);
   if (!font) {
     throw new Error(`Font with id "${fontId}" not found in curated repository.`);
   }
 
-  const userFontsDir = getUserFontsDirectory();
+  const userFontsDir = options.fontsDirectory || getUserFontsDirectory();
   await mkdir(userFontsDir, { recursive: true });
   const targetPath = path.join(userFontsDir, font.filename);
 
-  // Download font from remote or fallback
-  const response = await fetch(font.downloadUrl, { signal: AbortSignal.timeout(15_000) });
-  if (!response.ok) {
-    throw new Error(`Failed to download font: HTTP ${response.status} ${response.statusText}`);
+  const urls = font.downloadUrls?.length ? font.downloadUrls : [font.downloadUrl];
+  let lastError = null;
+
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        await writeFile(targetPath, Buffer.from(arrayBuffer));
+        return { ok: true, name: font.name, path: targetPath };
+      }
+      lastError = new Error(`HTTP ${response.status} ${response.statusText}`);
+    } catch (err) {
+      lastError = err;
+    }
   }
 
-  const arrayBuffer = await response.arrayBuffer();
-  await writeFile(targetPath, Buffer.from(arrayBuffer));
-
-  return { ok: true, name: font.name, path: targetPath };
+  throw new Error(`Failed to download font "${font.name}". Please install manually from ${font.homepage} (Details: ${lastError?.message || "network error"}).`);
 }

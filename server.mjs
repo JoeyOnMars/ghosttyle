@@ -697,7 +697,7 @@ export async function createGhosttyServer(options = {}) {
           return;
         }
         const body = await readJsonBody(request);
-        const result = await installTheme(body);
+        const result = await installTheme(body, { configPath });
         const themes = await getThemes(true);
         jsonResponse(response, 200, { ok: true, result, themes });
         return;

@@ -2201,9 +2201,33 @@ function bindEvents() {
   }
 
   window.addEventListener("keydown", (event) => {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+    const isModifier = event.metaKey || event.ctrlKey;
+    const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
+
+    if (isModifier && event.key.toLowerCase() === "s") {
       event.preventDefault();
       saveCurrentConfig({ reload: state.automation.reloadSupported });
+      return;
+    }
+
+    if ((isModifier && event.key.toLowerCase() === "k") || (!isModifier && !isInput && event.key === "/")) {
+      event.preventDefault();
+      const themeNav = document.querySelector('[data-panel="themes"]');
+      if (themeNav) themeNav.click();
+      if (elements.themeSearch) {
+        elements.themeSearch.focus();
+        elements.themeSearch.select?.();
+      }
+      return;
+    }
+
+    if (event.key === "Escape") {
+      if (isInput) {
+        document.activeElement?.blur();
+      }
+      if (elements.notice && !elements.notice.classList.contains("is-hidden")) {
+        elements.notice.classList.add("is-hidden");
+      }
     }
   });
 
